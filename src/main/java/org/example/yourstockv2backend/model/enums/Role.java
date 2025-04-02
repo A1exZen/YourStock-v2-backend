@@ -1,5 +1,7 @@
 package org.example.yourstockv2backend.model.enums;
 
 public enum Role {
-    ADMIN, MANAGER, EMPLOYEE, MAT_MANAGER, DEP_MANAGER, STOCK_MANAGER
+    ADMIN,
+    MANAGER,
+    EMPLOYEE
 }
