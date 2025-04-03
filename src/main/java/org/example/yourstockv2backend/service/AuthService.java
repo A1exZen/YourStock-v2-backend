@@ -82,13 +82,18 @@ public class AuthService {
         personalDetailDTO.setCity(request.getCity());
         PersonalDetail personalDetail = personalDetailService.createPersonalDetail(personalDetailDTO);
 
-        Employee employee = employeeService.createEmployee(request.getPosition(), personalDetail);
+        String position =  request.getPosition() != null ? request.getPosition() : "Employee";
+        Employee employee = employeeService.createEmployee(position, personalDetail);
 
         Role role;
-        try {
-            role = Role.valueOf(request.getRole());
-        } catch (IllegalArgumentException e) {
-            throw new CustomException("Invalid role: " + request.getRole(), HttpStatus.BAD_REQUEST);
+        if (request.getRole() == null || request.getRole().isEmpty()) {
+            role = Role.EMPLOYEE;
+        } else {
+            try {
+                role = Role.valueOf(request.getRole());
+            } catch (IllegalArgumentException e) {
+                throw new CustomException("Invalid role: " + request.getRole(), HttpStatus.BAD_REQUEST);
+            }
         }
         String encodedPassword = passwordEncoder.encode(request.getPassword());
         userService.createUser(request.getUsername(), encodedPassword, employee, role);

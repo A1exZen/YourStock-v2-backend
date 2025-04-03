@@ -37,11 +37,7 @@ public class RegisterRequest {
     @Size(max = 255)
     private String city;
 
-    @NotBlank
-    @Size(max = 255)
     private String position;
 
-    @NotBlank(message = "Role must not be blank")
-    @Pattern(regexp = "ADMIN|MANAGER|EMPLOYEE", message = "Role must be one of: ADMIN, MANAGER, EMPLOYEE")
     private String role;
 }
