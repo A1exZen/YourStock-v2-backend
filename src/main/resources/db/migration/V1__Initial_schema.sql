@@ -32,10 +32,15 @@ CREATE INDEX idx_user_google_id ON "user" (google_id);
 
 CREATE TABLE supplier
 (
-    id                  BIGSERIAL PRIMARY KEY,
-    name                VARCHAR(255) NOT NULL UNIQUE,
-    personal_details_id BIGINT       REFERENCES personal_details (id) ON DELETE SET NULL,
-    created_at          TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    id             BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    name           VARCHAR(255) NOT NULL,
+    contact_person VARCHAR(255),
+    email          VARCHAR(255),
+    phone          VARCHAR(255),
+    address        VARCHAR(500),
+    status         VARCHAR(50)  NOT NULL    DEFAULT 'ACTIVE',
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE customer
