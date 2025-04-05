@@ -45,6 +45,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        // Пропускаем OPTIONS-запросы (preflight)
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            logger.debug("Skipping JWT filter for OPTIONS request: {}", request.getRequestURI());
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String path = request.getRequestURI();
         if (path.startsWith("/api/auth/") || path.startsWith("/swagger-ui/") || path.startsWith("/v3/api-docs/")) {
             logger.debug("Skipping JWT filter for path: {}", path);
@@ -74,7 +81,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
                         user.getUsername(),
                         null,
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
+                        Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name()))
                 );
 
                 accessToken = jwtTokenProvider.generateAccessToken(authentication);
