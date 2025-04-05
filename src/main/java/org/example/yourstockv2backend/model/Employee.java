@@ -18,7 +18,6 @@ import java.util.Set;
 public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @ColumnDefault("nextval('employee_id_seq')")
     @Column(name = "id", nullable = false)
     private Long id;
 
@@ -28,7 +27,7 @@ public class Employee {
     private String position;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "personal_details_id", nullable = false)
     private PersonalDetail personalDetails;
 
@@ -37,5 +36,10 @@ public class Employee {
     private OffsetDateTime createdAt;
 
     @OneToMany(mappedBy = "employee")
-    private Set<Report> reports = new LinkedHashSet<>();
+    private Set<User> users = new LinkedHashSet<>();
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+    }
 }

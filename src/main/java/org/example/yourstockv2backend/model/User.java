@@ -17,7 +17,6 @@ import java.time.OffsetDateTime;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @ColumnDefault("nextval('user_id_seq')")
     @Column(name = "id", nullable = false)
     private Long id;
 
@@ -32,7 +31,7 @@ public class User {
     private String password;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
@@ -48,5 +47,9 @@ public class User {
     @Size(max = 255)
     @Column(name = "google_id", unique = true)
     private String googleId;
-}
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+    }
+}

@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -17,13 +18,12 @@ import java.util.Set;
 public class PersonalDetail {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @ColumnDefault("nextval('personal_details_id_seq')")
     @Column(name = "id", nullable = false)
     private Long id;
 
     @Size(max = 50)
     @NotNull
-    @Column(name = "phone_number", nullable = false, length = 50)
+    @Column(name = "phone_number", nullable = false)
     private String phoneNumber;
 
     @Size(max = 255)
@@ -45,12 +45,15 @@ public class PersonalDetail {
     @Column(name = "city")
     private String city;
 
-    @OneToMany(mappedBy = "personalDetails")
-    private Set<Customer> customers = new LinkedHashSet<>();
+    @ColumnDefault("CURRENT_TIMESTAMP")
+    @Column(name = "created_at")
+    private OffsetDateTime createdAt;
 
     @OneToMany(mappedBy = "personalDetails")
     private Set<Employee> employees = new LinkedHashSet<>();
 
-    @OneToMany(mappedBy = "personalDetails")
-    private Set<Supplier> suppliers = new LinkedHashSet<>();
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+    }
 }

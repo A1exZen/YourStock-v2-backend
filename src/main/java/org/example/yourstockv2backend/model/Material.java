@@ -2,17 +2,13 @@ package org.example.yourstockv2backend.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 @Getter
 @Setter
@@ -21,7 +17,6 @@ import java.util.Set;
 public class Material {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @ColumnDefault("nextval('material_id_seq')")
     @Column(name = "id", nullable = false)
     private Long id;
 
@@ -31,33 +26,49 @@ public class Material {
     private String name;
 
     @NotNull
-    @Column(name = "description", nullable = false, length = Integer.MAX_VALUE)
-    private String description;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
     @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
-    private org.example.yourstockv2backend.model.Supplier supplier;
+    private Supplier supplier;
 
     @NotNull
-    @Column(name = "price", nullable = false, precision = 10, scale = 2)
-    private BigDecimal price;
+    @Positive
+    @Column(name = "price", nullable = false)
+    private Double price;
 
     @NotNull
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
+    @NotNull
+    @Column(name = "minimum_quantity", nullable = false)
+    private Integer minimumQuantity;
+
     @Size(max = 50)
     @NotNull
-    @Column(name = "unit", nullable = false, length = 50)
+    @Column(name = "unit", nullable = false)
     private String unit;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 
-    @OneToMany(mappedBy = "material")
-    private Set<org.example.yourstockv2backend.model.ReportMaterial> reportMaterials = new LinkedHashSet<>();
+    @ColumnDefault("CURRENT_TIMESTAMP")
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+        updatedAt = OffsetDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
 }

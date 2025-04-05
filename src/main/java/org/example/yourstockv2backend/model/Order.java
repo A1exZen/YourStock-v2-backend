@@ -4,10 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import org.example.yourstockv2backend.model.enums.OrderStatus;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -19,7 +17,6 @@ import java.util.Set;
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @ColumnDefault("nextval('order_id_seq')")
     @Column(name = "id", nullable = false)
     private Long id;
 
@@ -27,24 +24,39 @@ public class Order {
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 
-    @NotNull
-    @Column(name = "total_price", nullable = false, precision = 10, scale = 2)
-    private BigDecimal totalPrice;
+    @ColumnDefault("CURRENT_TIMESTAMP")
+    @Column(name = "updated_at")
+    private OffsetDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    @ColumnDefault("'ACCEPTED'")
-    @Column(name = "status", nullable = false, length = 20)
-    private OrderStatus status;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    private Employee employee;
 
-    @Column(name = "comment", length = Integer.MAX_VALUE)
+    @NotNull
+    @Column(name = "status", nullable = false)
+    private String status;
+
+    @Column(name = "comment")
     private String comment;
 
     @OneToMany(mappedBy = "order")
     private Set<OrderProduct> orderProducts = new LinkedHashSet<>();
-}
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+        updatedAt = OffsetDateTime.now();
+        if (status == null) {
+            status = "ACCEPTED";
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
+}
