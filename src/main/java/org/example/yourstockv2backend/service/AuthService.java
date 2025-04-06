@@ -82,7 +82,7 @@ public class AuthService {
         personalDetailDTO.setCity(request.getCity());
         PersonalDetail personalDetail = personalDetailService.createPersonalDetail(personalDetailDTO);
 
-        String position =  request.getPosition() != null ? request.getPosition() : "Employee";
+        String position = request.getPosition() != null ? request.getPosition() : "Employee";
         Employee employee = employeeService.createEmployee(position, personalDetail);
 
         Role role;
@@ -111,6 +111,7 @@ public class AuthService {
 
         String username = jwtTokenProvider.getUsernameFromToken(accessToken);
         String role = jwtTokenProvider.getRoleFromToken(accessToken);
+        Long userId = jwtTokenProvider.getUserIdFromToken(accessToken);
 
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
@@ -124,6 +125,6 @@ public class AuthService {
         response.addCookie(refreshTokenCookie);
 
         logger.info("User {} logged in successfully with role {}", username, role);
-        return new JwtResponse(accessToken, username, role);
+        return new JwtResponse(accessToken, username, role, userId);
     }
 }

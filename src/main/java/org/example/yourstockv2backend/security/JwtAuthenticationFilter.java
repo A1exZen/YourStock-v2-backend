@@ -11,7 +11,6 @@ import org.example.yourstockv2backend.service.RefreshTokenService;
 import org.example.yourstockv2backend.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,33 +18,33 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Collections;
 
-@Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final CustomUserDetailsService userDetailsService;
+    private final RefreshTokenService refreshTokenService;
+    private final UserService userService;
 
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
-
-    @Autowired
-    private RefreshTokenService refreshTokenService;
-
-    @Autowired
-    private UserService userService;
+    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
+                                   CustomUserDetailsService userDetailsService,
+                                   RefreshTokenService refreshTokenService,
+                                   UserService userService) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.userDetailsService = userDetailsService;
+        this.refreshTokenService = refreshTokenService;
+        this.userService = userService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        // Пропускаем OPTIONS-запросы (preflight)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             logger.debug("Skipping JWT filter for OPTIONS request: {}", request.getRequestURI());
             filterChain.doFilter(request, response);
@@ -79,7 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
 
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
-                        user.getUsername(),
+                        new CustomUserDetails(user),
                         null,
                         Collections.singletonList(new SimpleGrantedAuthority(user.getRole().name()))
                 );
@@ -123,11 +122,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void setAuthentication(HttpServletRequest request, String token) {
         String username = jwtTokenProvider.getUsernameFromToken(token);
+        Long userId = jwtTokenProvider.getUserIdFromToken(token);
         String role = jwtTokenProvider.getRoleFromToken(token);
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                userDetails, null, Collections.singletonList(new SimpleGrantedAuthority(role)));
+                userDetails,
+                null,
+                Collections.singletonList(new SimpleGrantedAuthority(role))
+        );
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
