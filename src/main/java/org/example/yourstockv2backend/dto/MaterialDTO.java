@@ -2,6 +2,8 @@ package org.example.yourstockv2backend.dto;
 
 import lombok.Data;
 
+import java.time.OffsetDateTime;
+
 @Data
 public class MaterialDTO {
     private Long id;
@@ -10,6 +12,7 @@ public class MaterialDTO {
     private SupplierDTO supplier;
     private Double price;
     private Integer quantity;
-    private Integer minimumQuantity;
     private String unit;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 }

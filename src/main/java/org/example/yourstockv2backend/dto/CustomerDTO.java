@@ -3,6 +3,8 @@ package org.example.yourstockv2backend.dto;
 import lombok.Data;
 import org.example.yourstockv2backend.model.enums.Status;
 
+import java.time.OffsetDateTime;
+
 @Data
 public class CustomerDTO {
     private Long id;
@@ -12,4 +14,6 @@ public class CustomerDTO {
     private String phone;
     private String address;
     private Status status;
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
 }
