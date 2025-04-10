@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 
@@ -19,14 +20,24 @@ public class Report {
     private Long id;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "action", nullable = false)
-    private String action;
+    private Action action;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id")
+    private Product product;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "material_id")
+    private Material material;
+
 
     @Column(name = "details")
     private String details;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "created_at")
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     @NotNull
@@ -34,8 +45,10 @@ public class Report {
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = OffsetDateTime.now();
+
+    public enum Action {
+        PRODUCT_RECEIVED, PRODUCT_SHIPPED, MATERIAL_RECEIVED, MATERIAL_SHIPPED,
+        PRODUCT_PRODUCED, MATERIAL_TRANSFERRED, PRODUCT_TRANSFERRED,
+        ORDER_CREATED, ORDER_UPDATED, INVENTORY_CHECK
     }
 }

@@ -25,31 +25,23 @@ public class Material {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
 
-    @NotNull
     @Positive
     @Column(name = "price", nullable = false)
     private Double price;
 
-    @NotNull
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @NotNull
-    @Column(name = "minimum_quantity", nullable = false)
-    private Integer minimumQuantity;
 
     @Size(max = 50)
-    @NotNull
     @Column(name = "unit", nullable = false)
     private String unit;
 

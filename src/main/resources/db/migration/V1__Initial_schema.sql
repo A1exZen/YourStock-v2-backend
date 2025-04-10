@@ -73,7 +73,6 @@ CREATE TABLE material
     supplier_id      BIGINT         NOT NULL REFERENCES supplier (id) ON DELETE CASCADE,
     price            DECIMAL(10, 2) NOT NULL CHECK (price > 0),
     quantity         INTEGER        NOT NULL CHECK (quantity >= 0),
-    minimum_quantity INTEGER        NOT NULL CHECK (minimum_quantity >= 0),
     unit             VARCHAR(50)    NOT NULL,
     created_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
@@ -137,54 +136,16 @@ CREATE TABLE order_product
 CREATE INDEX idx_order_product_order_id ON order_product (order_id);
 CREATE INDEX idx_order_product_product_id ON order_product (product_id);
 
-CREATE TABLE warehouse_transaction
-(
-    id          BIGSERIAL PRIMARY KEY,
-    type        VARCHAR(50)    NOT NULL CHECK (type IN ('RECEIVE_PRODUCT', 'RECEIVE_MATERIAL', 'SHIP_PRODUCT')),
-    product_id  BIGINT         REFERENCES product (id) ON DELETE SET NULL,
-    material_id BIGINT         REFERENCES material (id) ON DELETE SET NULL,
-    supplier_id BIGINT         REFERENCES supplier (id) ON DELETE SET NULL,
-    customer_id BIGINT         REFERENCES customer (id) ON DELETE SET NULL,
-    quantity    DECIMAL(10, 2) NOT NULL CHECK (quantity > 0),
-    unit        VARCHAR(50)    NOT NULL,
-    created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    employee_id BIGINT         NOT NULL REFERENCES employee (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_warehouse_transaction_product_id ON warehouse_transaction (product_id);
-CREATE INDEX idx_warehouse_transaction_material_id ON warehouse_transaction (material_id);
-CREATE INDEX idx_warehouse_transaction_supplier_id ON warehouse_transaction (supplier_id);
-CREATE INDEX idx_warehouse_transaction_customer_id ON warehouse_transaction (customer_id);
-CREATE INDEX idx_warehouse_transaction_employee_id ON warehouse_transaction (employee_id);
-
-CREATE TABLE report
-(
-    id     BIGSERIAL PRIMARY KEY,
-    action VARCHAR(50) NOT NULL CHECK (action IN ('PRODUCT_RECEIVED', 'MATERIAL_RECEIVED', 'PRODUCT_SHIPPED', 'ORDER_CREATED', 'ORDER_UPDATED', 'INVENTORY_CHECK')
-) ,
+CREATE TABLE report (
+                        id          BIGSERIAL PRIMARY KEY,
+                        action      VARCHAR(50) NOT NULL CHECK (action IN ('PRODUCT_RECEIVED', 'PRODUCT_SHIPPED', 'MATERIAL_RECEIVED', 'MATERIAL_SHIPPED', 'PRODUCT_PRODUCED', 'MATERIAL_TRANSFERRED', 'PRODUCT_TRANSFERRED', 'ORDER_CREATED', 'ORDER_UPDATED', 'INVENTORY_CHECK')),
+    product_id  BIGINT      REFERENCES product (id) ON DELETE SET NULL,
+    material_id BIGINT      REFERENCES material (id) ON DELETE SET NULL,
     details     TEXT,
     created_at  TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     employee_id BIGINT      NOT NULL REFERENCES employee (id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_report_employee_id ON report (employee_id);
-
-CREATE TABLE report_product
-(
-    id         BIGSERIAL PRIMARY KEY,
-    report_id  BIGINT NOT NULL REFERENCES report (id) ON DELETE CASCADE,
-    product_id BIGINT NOT NULL REFERENCES product (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_report_product_report_id ON report_product (report_id);
-CREATE INDEX idx_report_product_product_id ON report_product (product_id);
-
-CREATE TABLE report_material
-(
-    id          BIGSERIAL PRIMARY KEY,
-    report_id   BIGINT NOT NULL REFERENCES report (id) ON DELETE CASCADE,
-    material_id BIGINT NOT NULL REFERENCES material (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_report_material_report_id ON report_material (report_id);
-CREATE INDEX idx_report_material_material_id ON report_material (material_id);
+CREATE INDEX idx_report_product_id ON report (product_id);
+CREATE INDEX idx_report_material_id ON report (material_id);

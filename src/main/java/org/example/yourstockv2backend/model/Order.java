@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.LinkedHashSet;
@@ -20,12 +22,12 @@ public class Order {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "created_at")
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
-    @ColumnDefault("CURRENT_TIMESTAMP")
-    @Column(name = "updated_at")
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -36,9 +38,9 @@ public class Order {
     @JoinColumn(name = "employee_id")
     private Employee employee;
 
-    @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private Status status;
 
     @Column(name = "comment")
     private String comment;
@@ -46,17 +48,7 @@ public class Order {
     @OneToMany(mappedBy = "order")
     private Set<OrderProduct> orderProducts = new LinkedHashSet<>();
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = OffsetDateTime.now();
-        updatedAt = OffsetDateTime.now();
-        if (status == null) {
-            status = "ACCEPTED";
-        }
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = OffsetDateTime.now();
+    public enum Status {
+        ACCEPTED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
     }
 }

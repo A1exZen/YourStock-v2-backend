@@ -25,8 +25,9 @@ public class Category {
     private String name;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
-    private String type;
+    private Type type;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at")
@@ -35,5 +36,9 @@ public class Category {
     @PrePersist
     protected void onCreate() {
         createdAt = OffsetDateTime.now();
+    }
+
+    public enum Type {
+        PRODUCT, MATERIAL
     }
 }
