@@ -1,6 +1,7 @@
 package org.example.yourstockv2backend.dto;
 
 import lombok.Data;
+import org.example.yourstockv2backend.model.Category;
 
 import java.time.OffsetDateTime;
 
@@ -8,6 +9,6 @@ import java.time.OffsetDateTime;
 public class CategoryDTO {
     private Long id;
     private String name;
-    private String type;
+    private Category.Type type;
     private OffsetDateTime createdAt;
 }

@@ -5,7 +5,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.example.yourstockv2backend.dto.UserDTO;
 import org.example.yourstockv2backend.exception.CustomException;
+import org.example.yourstockv2backend.mapper.UserMapper;
 import org.example.yourstockv2backend.model.User;
 import org.example.yourstockv2backend.service.RefreshTokenService;
 import org.example.yourstockv2backend.service.UserService;
@@ -42,10 +44,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private UserMapper userMapper;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        // Пропускаем OPTIONS-запросы (preflight)
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             logger.debug("Skipping JWT filter for OPTIONS request: {}", request.getRequestURI());
             filterChain.doFilter(request, response);
@@ -75,8 +79,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (refreshToken != null) {
                 logger.info("Attempting to refresh access token using refresh token for request: {}", request.getRequestURI());
                 Long userId = refreshTokenService.verifyRefreshToken(refreshToken);
-                User user = userService.findById(userId)
-                        .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+                UserDTO userDTO = userService.getUserById(userId);
+                User user = userMapper.toEntity(userDTO);
 
                 Authentication authentication = new UsernamePasswordAuthenticationToken(
                         user.getUsername(),

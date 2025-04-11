@@ -5,15 +5,12 @@ import org.example.yourstockv2backend.model.OrderProduct;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {ProductMapper.class})
 public interface OrderProductMapper {
 
-//    @Mapping(source = "product.id", target = "productId")
-//    @Mapping(source = "product.name", target = "productName")
-//    @Mapping(source = "order.id", target = "orderId")
-    OrderProductDTO toDTO(OrderProduct orderProduct);
+    @Mapping(source = "order.id", target = "orderId")
+    OrderProductDTO toDto(OrderProduct orderProduct);
 
-//    @Mapping(source = "productId", target = "product.id")
-//    @Mapping(source = "orderId", target = "order.id")
+    @Mapping(source = "orderId", target = "order.id")
     OrderProduct toEntity(OrderProductDTO orderProductDTO);
 }

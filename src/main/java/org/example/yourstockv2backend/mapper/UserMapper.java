@@ -5,11 +5,20 @@ import org.example.yourstockv2backend.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {EmployeeMapper.class})
 public interface UserMapper {
 
-    @Mapping(source = "employee.id", target = "employeeId")
-    UserDTO toDTO(User user);
-    @Mapping(source = "employeeId", target = "employee.id")
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "username", source = "username")
+    @Mapping(target = "employee", source = "employee")
+    @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "role", source = "role")
+    UserDTO toDto(User user);
+
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "username", source = "username")
+    @Mapping(target = "employee", source = "employee")
+    @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "role", source = "role")
     User toEntity(UserDTO userDTO);
 }

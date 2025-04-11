@@ -1,10 +1,8 @@
 package org.example.yourstockv2backend.service;
 
-import org.example.yourstockv2backend.config.JwtConfig;
-import org.example.yourstockv2backend.exception.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -13,35 +11,58 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class RefreshTokenService {
 
-    private static final String REFRESH_TOKEN_PREFIX = "refresh_token:";
+    @Value("${jwt.refreshTokenExpiration}")
+    private long refreshTokenExpiration;
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    @Autowired
-    private JwtConfig jwtConfig;
-
     public String createRefreshToken(Long userId) {
         String token = UUID.randomUUID().toString();
-        String key = REFRESH_TOKEN_PREFIX + token;
-
-        redisTemplate.opsForValue().set(key, userId.toString(), jwtConfig.getRefreshTokenExpiration(), TimeUnit.MILLISECONDS);
+        String key = "refreshToken:" + token;
+        String value = userId + ":" + (System.currentTimeMillis() + refreshTokenExpiration);
+        redisTemplate.opsForValue().set(key, value, refreshTokenExpiration, TimeUnit.MILLISECONDS);
+        redisTemplate.opsForSet().add("userTokens:" + userId, token);
         return token;
     }
 
     public Long verifyRefreshToken(String token) {
-        String key = REFRESH_TOKEN_PREFIX + token;
-        String userId = redisTemplate.opsForValue().get(key);
+        return findUserIdByToken(token);
+    }
 
-        if (userId == null) {
-            throw new CustomException("Invalid or expired refresh token", HttpStatus.UNAUTHORIZED);
+    public Long findUserIdByToken(String token) {
+        String key = "refreshToken:" + token;
+        String value = redisTemplate.opsForValue().get(key);
+        if (value == null) {
+            throw new RuntimeException("Refresh token not found or expired");
         }
+        String[] parts = value.split(":");
+        Long userId = Long.parseLong(parts[0]);
+        long expiryDate = Long.parseLong(parts[1]);
+        if (System.currentTimeMillis() > expiryDate) {
+            redisTemplate.delete(key);
+            redisTemplate.opsForSet().remove("userTokens:" + userId, token);
+            throw new RuntimeException("Refresh token has expired");
+        }
+        return userId;
+    }
 
-        return Long.valueOf(userId);
+    public void deleteByUserId(Long userId) {
+        String userTokensKey = "userTokens:" + userId;
+        var tokens = redisTemplate.opsForSet().members(userTokensKey);
+        if (tokens != null) {
+            for (Object token : tokens) {
+                String tokenKey = "refreshToken:" + token;
+                redisTemplate.delete(tokenKey);
+            }
+        }
+        redisTemplate.delete(userTokensKey);
     }
 
     public void deleteRefreshToken(String token) {
-        String key = REFRESH_TOKEN_PREFIX + token;
+        Long userId = findUserIdByToken(token);
+        String key = "refreshToken:" + token;
         redisTemplate.delete(key);
+        redisTemplate.opsForSet().remove("userTokens:" + userId, token);
     }
 }

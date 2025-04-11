@@ -1,85 +1,55 @@
 package org.example.yourstockv2backend.service;
 
+import lombok.AllArgsConstructor;
 import org.example.yourstockv2backend.dto.SupplierDTO;
-import org.example.yourstockv2backend.exception.CustomException;
+import org.example.yourstockv2backend.mapper.SupplierMapper;
 import org.example.yourstockv2backend.model.Supplier;
-import org.example.yourstockv2backend.model.enums.Status;
 import org.example.yourstockv2backend.repository.SupplierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class SupplierService {
 
-    @Autowired
-    private SupplierRepository supplierRepository;
+    private final SupplierRepository supplierRepository;
 
-    @Transactional
+    private final SupplierMapper supplierMapper;
+
     public SupplierDTO createSupplier(SupplierDTO supplierDTO) {
-        Supplier supplier = new Supplier();
-        supplier.setName(supplierDTO.getName());
-        supplier.setContactPerson(supplierDTO.getContactPerson());
-        supplier.setEmail(supplierDTO.getEmail());
-        supplier.setPhone(supplierDTO.getPhone());
-        supplier.setAddress(supplierDTO.getAddress());
-        supplier.setStatus(supplierDTO.getStatus() != null ? supplierDTO.getStatus() : Status.ACTIVE);
-
+        Supplier supplier = supplierMapper.toEntity(supplierDTO);
         supplier = supplierRepository.save(supplier);
-        supplierDTO.setId(supplier.getId());
-        return supplierDTO;
+        return supplierMapper.toDto(supplier);
     }
 
-    @Transactional(readOnly = true)
-    public List<SupplierDTO> getAllSuppliers() {
-        return supplierRepository.findAll().stream().map(this::convertToDTO).collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
     public SupplierDTO getSupplierById(Long id) {
         Supplier supplier = supplierRepository.findById(id)
-                .orElseThrow(() -> new CustomException("Supplier not found", HttpStatus.NOT_FOUND));
-        return convertToDTO(supplier);
+                .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
+        return supplierMapper.toDto(supplier);
     }
 
-    @Transactional
+    public List<SupplierDTO> getAllSuppliers() {
+        return supplierRepository.findAll().stream()
+                .map(supplierMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
     public SupplierDTO updateSupplier(Long id, SupplierDTO supplierDTO) {
-        Supplier supplier = supplierRepository.findById(id)
-                .orElseThrow(() -> new CustomException("Supplier not found", HttpStatus.NOT_FOUND));
-
-        supplier.setName(supplierDTO.getName());
-        supplier.setContactPerson(supplierDTO.getContactPerson());
-        supplier.setEmail(supplierDTO.getEmail());
-        supplier.setPhone(supplierDTO.getPhone());
-        supplier.setAddress(supplierDTO.getAddress());
-        if (supplierDTO.getStatus() != null) {
-            supplier.setStatus(supplierDTO.getStatus());
-        }
-
-        supplierRepository.save(supplier);
-        return supplierDTO;
+        Supplier existingSupplier = supplierRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
+        Supplier updatedSupplier = supplierMapper.toEntity(supplierDTO);
+        updatedSupplier.setId(existingSupplier.getId());
+        updatedSupplier = supplierRepository.save(updatedSupplier);
+        return supplierMapper.toDto(updatedSupplier);
     }
 
-    @Transactional
     public void deleteSupplier(Long id) {
-        Supplier supplier = supplierRepository.findById(id)
-                .orElseThrow(() -> new CustomException("Supplier not found", HttpStatus.NOT_FOUND));
-        supplierRepository.delete(supplier);
-    }
-
-    private SupplierDTO convertToDTO(Supplier supplier) {
-        SupplierDTO supplierDTO = new SupplierDTO();
-        supplierDTO.setId(supplier.getId());
-        supplierDTO.setName(supplier.getName());
-        supplierDTO.setContactPerson(supplier.getContactPerson());
-        supplierDTO.setEmail(supplier.getEmail());
-        supplierDTO.setPhone(supplier.getPhone());
-        supplierDTO.setAddress(supplier.getAddress());
-        supplierDTO.setStatus(supplier.getStatus());
-        return supplierDTO;
+        if (!supplierRepository.existsById(id)) {
+            throw new RuntimeException("Supplier not found with id: " + id);
+        }
+        supplierRepository.deleteById(id);
     }
 }

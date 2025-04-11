@@ -1,48 +1,69 @@
 package org.example.yourstockv2backend.service;
 
+import lombok.RequiredArgsConstructor;
 import org.example.yourstockv2backend.dto.UserDTO;
-import org.example.yourstockv2backend.model.Employee;
-import org.example.yourstockv2backend.model.PersonalDetail;
+import org.example.yourstockv2backend.mapper.UserMapper;
 import org.example.yourstockv2backend.model.User;
-import org.example.yourstockv2backend.model.enums.Role;
 import org.example.yourstockv2backend.repository.UserRepository;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private EmployeeService employeeService;
+    private final UserMapper userMapper;
 
-    @Autowired
-    private PersonalDetailService personalDetailService;
-
-    public User createUser(String username, String password, Employee employee, Role role) {
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(password);
-        user.setEmployee(employee);
-        user.setRole(role);
+    public User createUser(User user) {
         return userRepository.save(user);
     }
 
-    public Optional<User> findById(Long id){
-        return userRepository.findById(id);
+    public UserDTO getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        Hibernate.initialize(user.getEmployee());
+        return userMapper.toDto(user);
     }
 
-    public UserDTO toDTO(User user) {
-        UserDTO dto = new UserDTO();
-        dto.setId(user.getId());
-        dto.setUsername(user.getUsername());
-        dto.setRole(user.getRole());
-        dto.setEmployee(employeeService.toDTO(user.getEmployee()));
-        return dto;
+    @Transactional(readOnly = true)
+    public UserDTO getUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+        Hibernate.initialize(user.getEmployee());
+        return userMapper.toDto(user);
     }
 
+    @Transactional(readOnly = true)
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> {
+                    Hibernate.initialize(user.getEmployee());
+                    return userMapper.toDto(user);
+                })
+                .collect(Collectors.toList());
+    }
+
+    public UserDTO updateUser(Long id, UserDTO userDTO) {
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        User updatedUser = userMapper.toEntity(userDTO);
+        updatedUser.setId(existingUser.getId());
+        updatedUser = userRepository.save(updatedUser);
+        Hibernate.initialize(updatedUser.getEmployee());
+        return userMapper.toDto(updatedUser);
+    }
+
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new RuntimeException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
+    }
 }
