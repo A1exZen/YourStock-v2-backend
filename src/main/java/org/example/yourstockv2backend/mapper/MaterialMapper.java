@@ -4,29 +4,17 @@ import org.example.yourstockv2backend.dto.MaterialDTO;
 import org.example.yourstockv2backend.model.Material;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.factory.Mappers;
 
-@Mapper(componentModel = "spring", uses = {CategoryMapper.class, SupplierMapper.class})
+@Mapper(componentModel = "spring")
 public interface MaterialMapper {
+    MaterialMapper INSTANCE = Mappers.getMapper(MaterialMapper.class);
 
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "category", source = "category")
-    @Mapping(target = "supplier", source = "supplier")
-    @Mapping(target = "price", source = "price")
-    @Mapping(target = "quantity", source = "quantity")
-    @Mapping(target = "unit", source = "unit")
-    @Mapping(target = "createdAt", source = "createdAt")
-    @Mapping(target = "updatedAt", source = "updatedAt")
+    @Mapping(source = "category.id", target = "categoryId")
+    @Mapping(source = "supplier.id", target = "supplierId")
     MaterialDTO toDto(Material material);
 
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "name", source = "name")
-    @Mapping(target = "category", source = "category")
-    @Mapping(target = "supplier", source = "supplier")
-    @Mapping(target = "price", source = "price")
-    @Mapping(target = "quantity", source = "quantity")
-    @Mapping(target = "unit", source = "unit")
-    @Mapping(target = "createdAt", source = "createdAt")
-    @Mapping(target = "updatedAt", source = "updatedAt")
+    @Mapping(source = "categoryId", target = "category.id")
+    @Mapping(source = "supplierId", target = "supplier.id")
     Material toEntity(MaterialDTO materialDTO);
 }

@@ -5,8 +5,7 @@ import lombok.Data;
 @Data
 public class ProductMaterialDTO {
     private Long id;
-    private Long productId;
-    private MaterialDTO material;
+    private Long materialId;
     private Double quantity;
     private String unit;
 }

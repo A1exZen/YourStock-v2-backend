@@ -4,9 +4,11 @@ import lombok.AllArgsConstructor;
 import org.example.yourstockv2backend.dto.SupplierDTO;
 import org.example.yourstockv2backend.mapper.SupplierMapper;
 import org.example.yourstockv2backend.model.Supplier;
+import org.example.yourstockv2backend.model.enums.Status;
 import org.example.yourstockv2backend.repository.SupplierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,6 +46,14 @@ public class SupplierService {
         updatedSupplier.setId(existingSupplier.getId());
         updatedSupplier = supplierRepository.save(updatedSupplier);
         return supplierMapper.toDto(updatedSupplier);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SupplierDTO> getActiveSuppliers() {
+        return supplierRepository.findByStatus(Status.ACTIVE)
+                .stream()
+                .map(supplierMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     public void deleteSupplier(Long id) {

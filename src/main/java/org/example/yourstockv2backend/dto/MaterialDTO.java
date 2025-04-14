@@ -8,11 +8,9 @@ import java.time.OffsetDateTime;
 public class MaterialDTO {
     private Long id;
     private String name;
-    private CategoryDTO category;
-    private SupplierDTO supplier;
+    private Long categoryId;
+    private Long supplierId;
     private Double price;
     private Integer quantity;
     private String unit;
-    private OffsetDateTime createdAt;
-    private OffsetDateTime updatedAt;
 }

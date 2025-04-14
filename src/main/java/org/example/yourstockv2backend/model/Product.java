@@ -29,7 +29,6 @@ public class Product {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @NotNull
     @Column(name = "description", nullable = false)
     private String description;
 

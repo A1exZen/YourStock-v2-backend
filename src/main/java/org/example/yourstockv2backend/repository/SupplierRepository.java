@@ -14,4 +14,5 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
     boolean existsByName(String name);
     List<Supplier> findByStatus(Status status);
     Optional<Supplier> findByName(String name);
+
 }

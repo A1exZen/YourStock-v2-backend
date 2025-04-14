@@ -5,15 +5,16 @@ import org.example.yourstockv2backend.model.Order;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Data
 public class OrderDTO {
     private Long id;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-    private CustomerDTO customer;
-    private EmployeeDTO employee;
-    private Order.Status status;
+    private Long customerId;
+    private Long employeeId;
+    private String status;
     private String comment;
-    private List<OrderProductDTO> orderProducts;
+    private Set<OrderProductDTO> orderProducts;
 }

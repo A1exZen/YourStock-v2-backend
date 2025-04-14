@@ -47,4 +47,11 @@ public class SupplierController {
         supplierService.deleteSupplier(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/active")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<List<SupplierDTO>> getActiveSuppliers() {
+        List<SupplierDTO> activeSuppliers = supplierService.getActiveSuppliers();
+        return ResponseEntity.ok(activeSuppliers);
+    }
 }

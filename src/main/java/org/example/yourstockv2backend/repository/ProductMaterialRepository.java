@@ -10,10 +10,7 @@ import java.util.List;
 
 @Repository
 public interface ProductMaterialRepository extends JpaRepository<ProductMaterial, Long> {
-
     List<ProductMaterial> findByProduct(Product product);
-
     List<ProductMaterial> findByMaterial(Material material);
-
     void deleteByProduct(Product product);
 }
