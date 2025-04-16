@@ -4,11 +4,13 @@ import lombok.AllArgsConstructor;
 import org.example.yourstockv2backend.dto.OrderDTO;
 import org.example.yourstockv2backend.mapper.OrderMapper;
 import org.example.yourstockv2backend.model.Order;
+import org.example.yourstockv2backend.model.OrderProduct;
 import org.example.yourstockv2backend.model.Product;
+import org.example.yourstockv2backend.model.enums.Status;
 import org.example.yourstockv2backend.repository.OrderRepository;
 import org.example.yourstockv2backend.repository.ProductRepository;
-import org.hibernate.Hibernate;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,106 +21,69 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class OrderService {
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private  OrderMapper orderMapper;
+    private final OrderRepository orderRepository;
+    private final ProductRepository productRepository;
+    private final OrderMapper orderMapper;
 
     @Transactional
     public OrderDTO createOrder(OrderDTO orderDTO) {
-        Order order = orderMapper.toEntity(orderDTO);
+        logger.info("Создание нового заказа");
 
-        for (var orderProductDTO : orderDTO.getOrderProducts()) {
-            Product product = productRepository.findById(Math.toIntExact(orderProductDTO.getProductId()))
-                    .orElseThrow(() -> new RuntimeException("Продукт с ID " + orderProductDTO.getProductId() + " не найден"));
-            if (product.getQuantity() < orderProductDTO.getQuantity()) {
-                throw new RuntimeException(
-                        "Недостаточно продукта " + product.getName() + ": требуется " + orderProductDTO.getQuantity() +
-                                ", доступно " + product.getQuantity()
-                );
+        Order order = orderMapper.toEntity(orderDTO);
+        order.setStatus(Order.Status.ACCEPTED);
+
+        for (OrderProduct orderProduct : order.getOrderProducts()) {
+            Product product = productRepository.findById(Math.toIntExact(orderProduct.getProduct().getId()))
+                    .orElseThrow(() -> new IllegalArgumentException("Продукт с ID " + orderProduct.getProduct().getId() + " не найден"));
+
+            if (product.getQuantity() < orderProduct.getQuantity()) {
+                throw new IllegalArgumentException("Недостаточно продукта " + product.getName() + " на складе. Доступно: " + product.getQuantity());
             }
-            product.setQuantity(product.getQuantity() - orderProductDTO.getQuantity());
-            orderProductDTO.setPriceAtOrder(product.getPrice());
+
+            product.setQuantity(product.getQuantity() - orderProduct.getQuantity());
+            productRepository.save(product);
+
+            orderProduct.setPriceAtOrder(product.getPrice());
+            orderProduct.setOrder(order);
         }
 
-        order = orderRepository.save(order);
-        Hibernate.initialize(order.getOrderProducts());
-        Hibernate.initialize(order.getCustomer());
-        Hibernate.initialize(order.getEmployee());
-        return orderMapper.toDto(order);
-    }
-    @Transactional(readOnly = true)
-    public OrderDTO getOrderById(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Заказ с ID " + id + " не найден"));
-        Hibernate.initialize(order.getOrderProducts());
-        Hibernate.initialize(order.getCustomer());
-        Hibernate.initialize(order.getEmployee());
-        return orderMapper.toDto(order);
+        Order savedOrder = orderRepository.save(order);
+        return orderMapper.toDto(savedOrder);
     }
 
     @Transactional(readOnly = true)
     public List<OrderDTO> getAllOrders() {
-        return orderRepository.findAll().stream()
-                .map(order -> {
-                    Hibernate.initialize(order.getOrderProducts());
-                    Hibernate.initialize(order.getCustomer());
-                    Hibernate.initialize(order.getEmployee());
-                    return orderMapper.toDto(order);
-                })
+        logger.info("Получение списка всех заказов");
+        return orderRepository.findAll()
+                .stream()
+                .map(orderMapper::toDto)
                 .collect(Collectors.toList());
     }
+
     @Transactional
-    public OrderDTO updateOrder(Long id, OrderDTO orderDTO) {
-        Order existingOrder = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Заказ с ID " + id + " не найден"));
-        Order updatedOrder = orderMapper.toEntity(orderDTO);
-        updatedOrder.setId(existingOrder.getId());
+    public OrderDTO updateOrderStatus(Long orderId, Order.Status newStatus) {
+        logger.info("Обновление статуса заказа с ID: {} на {}", orderId, newStatus);
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Заказ с ID " + orderId + " не найден"));
 
-        for (var existingOrderProduct : existingOrder.getOrderProducts()) {
-            Product product = productRepository.findById(Math.toIntExact(existingOrderProduct.getProduct().getId()))
-                    .orElseThrow(() -> new RuntimeException("Продукт с ID " + existingOrderProduct.getProduct().getId() + " не найден"));
-            product.setQuantity(product.getQuantity() + existingOrderProduct.getQuantity());
+        if (order.getStatus() == Order.Status.CANCELLED || order.getStatus() == Order.Status.DELIVERED) {
+            throw new IllegalStateException("Нельзя изменить статус завершённого или отменённого заказа");
         }
 
-        for (var orderProductDTO : orderDTO.getOrderProducts()) {
-            Product product = productRepository.findById(Math.toIntExact(orderProductDTO.getProductId()))
-                    .orElseThrow(() -> new RuntimeException("Продукт с ID " + orderProductDTO.getProductId() + " не найден"));
-            if (product.getQuantity() < orderProductDTO.getQuantity()) {
-                throw new RuntimeException(
-                        "Недостаточно продукта " + product.getName() + ": требуется " + orderProductDTO.getQuantity() +
-                                ", доступно " + product.getQuantity()
-                );
+        if (newStatus == Order.Status.CANCELLED) {
+            for (OrderProduct orderProduct : order.getOrderProducts()) {
+                Product product = productRepository.findById(Math.toIntExact(orderProduct.getProduct().getId()))
+                        .orElseThrow(() -> new IllegalArgumentException("Продукт с ID " + orderProduct.getProduct().getId() + " не найден"));
+                product.setQuantity(product.getQuantity() + orderProduct.getQuantity());
+                productRepository.save(product);
             }
-            product.setQuantity(product.getQuantity() - orderProductDTO.getQuantity());
-            orderProductDTO.setPriceAtOrder(product.getPrice());
         }
 
-        updatedOrder = orderRepository.save(updatedOrder);
-        Hibernate.initialize(updatedOrder.getOrderProducts());
-        Hibernate.initialize(updatedOrder.getCustomer());
-        Hibernate.initialize(updatedOrder.getEmployee());
+        order.setStatus(newStatus);
+        Order updatedOrder = orderRepository.save(order);
         return orderMapper.toDto(updatedOrder);
     }
-
-    @Transactional
-    public void deleteOrder(Long id) {
-        Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Заказ с ID " + id + " не найден"));
-        Hibernate.initialize(order.getOrderProducts());
-
-        for (var orderProduct : order.getOrderProducts()) {
-            Product product = productRepository.findById(Math.toIntExact(orderProduct.getProduct().getId()))
-                    .orElseThrow(() -> new RuntimeException("Продукт с ID " + orderProduct.getProduct().getId() + " не найден"));
-            product.setQuantity(product.getQuantity() + orderProduct.getQuantity());
-        }
-
-        orderRepository.deleteById(id);
-    }
-
 
 }

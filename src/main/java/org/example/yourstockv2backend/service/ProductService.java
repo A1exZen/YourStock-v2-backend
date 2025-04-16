@@ -46,6 +46,7 @@ public class ProductService {
         logger.info("Получение списка всех продуктов");
         return productRepository.findAll()
                 .stream()
+                .filter(product -> product.getQuantity() > 0)
                 .map(productMapper::toDto)
                 .collect(Collectors.toList());
     }
