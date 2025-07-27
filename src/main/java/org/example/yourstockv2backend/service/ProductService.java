@@ -230,15 +230,6 @@ public class ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("Продукт с ID " + id + " не найден"));
         Hibernate.initialize(product.getRequiredMaterials());
 
-//        for (ProductMaterial productMaterial : product.getRequiredMaterials()) {
-//            Material material = productMaterial.getMaterial();
-//            double totalReturnedQuantity = productMaterial.getQuantity() * product.getQuantity();
-//            material.setQuantity((int) (material.getQuantity() + totalReturnedQuantity));
-//            materialRepository.save(material);
-//            logger.info("Материал с ID {}: возвращено {} {}, осталось {}",
-//                    material.getId(), totalReturnedQuantity, material.getUnit(), material.getQuantity());
-//        }
-
         productRepository.deleteById(Math.toIntExact(id));
     }
 
@@ -260,46 +251,6 @@ public class ProductService {
         return finalCost;
     }
 
-    @Transactional
-    public void produceProduct(Long productId, int quantityToProduce) {
-        logger.info("Производство продукта с ID: {}, количество: {}", productId, quantityToProduce);
-        Product product = productRepository.findById(Math.toIntExact(productId))
-                .orElseThrow(() -> new RuntimeException("Продукт с ID " + productId + " не найден"));
-        Hibernate.initialize(product.getRequiredMaterials());
-
-        Map<Material, Double> requiredMaterials = new HashMap<>();
-        for (ProductMaterial productMaterial : product.getRequiredMaterials()) {
-            Material material = productMaterial.getMaterial();
-            Hibernate.initialize(material);
-
-            double requiredQuantity = productMaterial.getQuantity() * quantityToProduce;
-            int availableQuantity = material.getQuantity();
-
-            if (availableQuantity < requiredQuantity) {
-                throw new RuntimeException(
-                        "Недостаточно материала " + material.getName() + ": требуется " + requiredQuantity +
-                                ", доступно " + availableQuantity
-                );
-            }
-
-            requiredMaterials.put(material, requiredQuantity);
-        }
-
-        for (Map.Entry<Material, Double> entry : requiredMaterials.entrySet()) {
-            Material material = entry.getKey();
-            double usedQuantity = entry.getValue();
-            material.setQuantity((int) (material.getQuantity() - usedQuantity));
-            materialRepository.save(material);
-            logger.info("Производство продукта '{}': использовано {} {} материала '{}'",
-                    product.getName(), usedQuantity, material.getUnit(), material.getName());
-        }
-
-        product.setQuantity(product.getQuantity() + quantityToProduce);
-        logger.info("Произведено {} единиц продукта '{}'. Новый запас: {}",
-                quantityToProduce, product.getName(), product.getQuantity());
-
-        productRepository.save(product);
-    }
 
     @Transactional(readOnly = true)
     public Map<String, MaterialRequirementDTO> calculateMaterials(Long id, int quantity) {
@@ -325,23 +276,7 @@ public class ProductService {
         return requirements;
     }
 
-    @Transactional(readOnly = true)
-    public double calculateCost(Long id) {
-        logger.info("Расчёт стоимости для продукта с ID: {}", id);
-        Product product = productRepository.findById(Math.toIntExact(id))
-                .orElseThrow(() -> new RuntimeException("Продукт с ID " + id + " не найден"));
-        Hibernate.initialize(product.getRequiredMaterials());
 
-        double totalCost = 0.0;
-        for (ProductMaterial productMaterial : product.getRequiredMaterials()) {
-            var material = productMaterial.getMaterial();
-            Hibernate.initialize(material);
-
-            double materialCost = material.getPrice() * productMaterial.getQuantity();
-            totalCost += materialCost;
-        }
-        return totalCost;
-    }
 
     // Валидация ProductDTO
     private void validateProductDTO(ProductDTO productDTO) {
